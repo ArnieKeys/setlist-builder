@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Setlist Builder</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; padding-bottom: 80px; }
+
+/* Tabs */
+.tabs { display: flex; background: #1a1a1a; position: sticky; top: 0; z-index: 10; border-bottom: 1px solid #2a2a2a; }
+.tab { flex: 1; text-align: center; padding: 14px 8px; font-size: 14px; font-weight: 500; color: #888; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
+.tab.active { color: #6c8cff; border-bottom-color: #6c8cff; }
+.badge { background: #6c8cff; color: #fff; font-size: 11px; padding: 1px 7px; border-radius: 10px; margin-left: 4px; }
+
+/* Search */
+.search-bar { padding: 10px 12px; background: #1a1a1a; border-bottom: 1px solid #2a2a2a; }
+.search-input { width: 100%; padding: 10px 14px; background: #252525; border: 1px solid #333; border-radius: 8px; color: #e0e0e0; font-size: 15px; outline: none; }
+.search-input:focus { border-color: #6c8cff; }
+.search-input::placeholder { color: #555; }
+
+/* Filters */
+.filters { display: flex; gap: 6px; padding: 8px 12px; background: #1a1a1a; overflow-x: auto; border-bottom: 1px solid #2a2a2a; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.filters::-webkit-scrollbar { display: none; }
+.filter { padding: 5px 12px; border-radius: 14px; font-size: 12px; font-weight: 500; background: #252525; color: #888; border: 1px solid #333; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+.filter.active { background: #6c8cff; color: #fff; border-color: #6c8cff; }
+
+/* Genre badge colors in filter bar */
+.filter.genre-swing.active { background: #d4a437; border-color: #d4a437; }
+.filter.genre-bossa.active { background: #4caf90; border-color: #4caf90; }
+.filter.genre-ballad.active { background: #6b8db5; border-color: #6b8db5; }
+.filter.genre-jazz.active { background: #8b6fbf; border-color: #8b6fbf; }
+.filter.genre-pop.active { background: #d4607a; border-color: #d4607a; }
+.filter.genre-dance.active { background: #e07b4c; border-color: #e07b4c; }
+.filter.genre-latin.active { background: #c94f4f; border-color: #c94f4f; }
+.filter.genre-chinese.active { background: #4a9fd4; border-color: #4a9fd4; }
+.filter.genre-christmas.active { background: #4caf50; border-color: #4caf50; }
+.filter.genre-funk.active { background: #d49537; border-color: #d49537; }
+.filter.genre-soul.active { background: #9b6bbf; border-color: #9b6bbf; }
+.filter.genre-waltz.active { background: #6ba3c9; border-color: #6ba3c9; }
+.filter.genre-6-8.active { background: #5c9c8f; border-color: #5c9c8f; }
+
+/* Song list */
+.song-list { padding: 8px 0; }
+.song { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #1a1a1a; cursor: pointer; transition: background 0.1s; gap: 8px; }
+.song:active { background: #1a1a1a; }
+.song .num { color: #555; font-size: 13px; width: 28px; flex-shrink: 0; }
+.song .info { flex: 1; min-width: 0; }
+.song .title { font-size: 15px; color: #e0e0e0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.song .meta { font-size: 12px; color: #666; margin-top: 2px; display: flex; gap: 6px; align-items: center; }
+.song .key { background: #333; color: #aaa; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+.song .genre-tag { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 500; white-space: nowrap; flex-shrink: 0; }
+.song .genre-tag.g-swing { background: #3d2e10; color: #d4a437; }
+.song .genre-tag.g-bossa { background: #132e24; color: #4caf90; }
+.song .genre-tag.g-ballad { background: #1a2530; color: #6b8db5; }
+.song .genre-tag.g-jazz { background: #241d33; color: #8b6fbf; }
+.song .genre-tag.g-pop { background: #331821; color: #d4607a; }
+.song .genre-tag.g-dance { background: #331f14; color: #e07b4c; }
+.song .genre-tag.g-latin { background: #2e1515; color: #c94f4f; }
+.song .genre-tag.g-chinese { background: #142836; color: #4a9fd4; }
+.song .genre-tag.g-christmas { background: #142e16; color: #4caf50; }
+.song .genre-tag.g-funk { background: #332812; color: #d49537; }
+.song .genre-tag.g-soul { background: #261d30; color: #9b6bbf; }
+.song .genre-tag.g-waltz { background: #162632; color: #6ba3c9; }
+.song .genre-tag.g-6-8 { background: #142e28; color: #5c9c8f; }
+.song .genre-tag.g-none { background: #222; color: #555; }
+.song .add { width: 32px; height: 32px; border-radius: 50%; border: 1px solid #444; background: transparent; color: #6c8cff; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.song .add:active { background: #6c8cff; color: #fff; }
+.song .add.added { background: #6c8cff; color: #fff; border-color: #6c8cff; }
+
+/* Setlist */
+.setlist-header { padding: 16px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a2a2a; }
+.setlist-header h2 { font-size: 18px; font-weight: 600; }
+.setlist-header .btn { padding: 8px 16px; background: #333; color: #e0e0e0; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; }
+.setlist-header .btn.danger { background: #5c2020; color: #f87171; }
+.setlist-song { display: flex; align-items: center; padding: 10px 16px; border-bottom: 1px solid #1a1a1a; gap: 8px; }
+.setlist-song .order { color: #6c8cff; font-size: 14px; font-weight: 600; width: 24px; }
+.setlist-song .info { flex: 1; min-width: 0; }
+.setlist-song .remove { color: #f87171; cursor: pointer; padding: 6px; font-size: 14px; background: none; border: none; }
+.empty { text-align: center; padding: 48px 16px; color: #555; }
+.empty p { margin-top: 8px; font-size: 14px; }
+
+/* Import */
+.import-area { padding: 16px; }
+.import-area textarea { width: 100%; height: 200px; background: #252525; border: 1px solid #333; border-radius: 8px; color: #e0e0e0; padding: 12px; font-size: 13px; font-family: monospace; resize: vertical; }
+.import-area .btn { margin-top: 12px; padding: 12px 24px; background: #6c8cff; color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 500; cursor: pointer; width: 100%; }
+.import-area .hint { color: #666; font-size: 12px; margin-top: 8px; }
+.import-area .hint code { color: #888; background: #252525; padding: 1px 4px; border-radius: 3px; }
+.import-area .result { margin-top: 12px; padding: 12px; border-radius: 8px; font-size: 14px; }
+.import-area .result.ok { background: #1a2a1a; color: #4caf50; }
+.import-area .result.err { background: #2a1a1a; color: #f87171; }
+
+/* Edit modal */
+.modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: flex-end; }
+.modal.show { display: flex; }
+.modal-content { background: #1a1a1a; border-radius: 16px 16px 0 0; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; padding: 20px; }
+.modal-content h3 { font-size: 17px; margin-bottom: 16px; }
+.modal-content label { display: block; font-size: 12px; color: #888; margin-bottom: 4px; margin-top: 12px; }
+.modal-content label.required::after { content: ' *'; color: #f87171; }
+.modal-content input, .modal-content select { width: 100%; padding: 10px 12px; background: #252525; border: 1px solid #333; border-radius: 8px; color: #e0e0e0; font-size: 15px; }
+.modal-content input:focus, .modal-content select:focus { border-color: #6c8cff; outline: none; }
+.modal-content select.invalid { border-color: #f87171; }
+.modal-actions { display: flex; gap: 8px; margin-top: 20px; }
+.modal-actions .btn { flex: 1; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 500; border: none; cursor: pointer; }
+.modal-actions .btn.save { background: #6c8cff; color: #fff; }
+.modal-actions .btn.cancel { background: #333; color: #ccc; }
+
+/* Toast */
+.toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #333; color: #e0e0e0; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+.toast.show { opacity: 1; }
+
+/* Empty state buttons */
+.empty-actions { display: flex; gap: 8px; justify-content: center; margin-top: 16px; }
+.empty-actions .btn { padding: 10px 20px; background: #6c8cff; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
+
+/* Set sections */
+.set-section { margin: 0 0 2px 0; }
+.set-header { display: flex; align-items: center; padding: 10px 16px; background: #1c1c1c; cursor: pointer; gap: 6px; border-bottom: 1px solid #2a2a2a; user-select: none; }
+.set-header .set-arrow { font-size: 10px; color: #888; width: 14px; transition: transform 0.15s; }
+.set-header .set-arrow.collapsed { transform: rotate(-90deg); }
+.set-header .set-name { flex: 1; font-size: 14px; font-weight: 600; color: #e0e0e0; }
+.set-header .set-count { font-size: 11px; color: #666; margin-right: 4px; }
+.set-header .set-actions { display: flex; gap: 2px; }
+.set-header .set-actions button { background: none; border: none; color: #888; padding: 6px; font-size: 13px; cursor: pointer; border-radius: 4px; }
+.set-header .set-actions button:active { background: #333; }
+.set-header .set-actions .del-set { color: #c94f4f; }
+.set-songs.collapsed { display: none; }
+
+/* Reorder buttons */
+.reorder-btn { background: none; border: none; color: #555; padding: 4px 6px; font-size: 10px; cursor: pointer; border-radius: 3px; }
+.reorder-btn:active { background: #333; color: #aaa; }
+.reorder-btn:disabled { color: #2a2a2a; cursor: default; }
+
+/* Add song to set button */
+.add-song-btn { display: block; width: calc(100% - 32px); margin: 8px 16px; padding: 10px; background: #1c1c1c; border: 1px dashed #333; border-radius: 8px; color: #888; font-size: 13px; cursor: pointer; text-align: center; }
+.add-song-btn:active { border-color: #6c8cff; color: #6c8cff; }
+
+/* Add set button */
+.add-set-btn { display: block; width: calc(100% - 32px); margin: 12px 16px; padding: 12px; background: #252525; border: 1px dashed #444; border-radius: 10px; color: #6c8cff; font-size: 14px; font-weight: 500; cursor: pointer; text-align: center; }
+.add-set-btn:active { background: #1a1a2e; }
+
+/* Song picker modal */
+.picker-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 150; flex-direction: column; }
+.picker-modal.show { display: flex; }
+.picker-header { display: flex; align-items: center; padding: 12px 16px; background: #1a1a1a; border-bottom: 1px solid #2a2a2a; gap: 8px; }
+.picker-header h3 { font-size: 15px; font-weight: 600; flex: 1; }
+.picker-header .close-picker { background: none; border: none; color: #888; font-size: 18px; padding: 4px 8px; cursor: pointer; }
+.picker-search { padding: 8px 12px; background: #1a1a1a; }
+.picker-search input { width: 100%; padding: 10px 14px; background: #252525; border: 1px solid #333; border-radius: 8px; color: #e0e0e0; font-size: 15px; outline: none; }
+.picker-search input:focus { border-color: #6c8cff; }
+.picker-genres { display: flex; gap: 6px; padding: 6px 12px; background: #1a1a1a; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.picker-genres::-webkit-scrollbar { display: none; }
+.picker-genre { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 500; background: #252525; color: #888; border: 1px solid #333; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+.picker-genre.active { background: #6c8cff; color: #fff; border-color: #6c8cff; }
+.picker-list { flex: 1; overflow-y: auto; padding: 4px 0; }
+.picker-song { display: flex; align-items: center; padding: 10px 16px; border-bottom: 1px solid #1a1a1a; cursor: pointer; gap: 8px; }
+.picker-song:active { background: #1a1a1a; }
+.picker-song .info { flex: 1; min-width: 0; }
+.picker-song .title { font-size: 14px; color: #e0e0e0; }
+.picker-song .sub { font-size: 11px; color: #666; }
+.picker-song .key { background: #333; color: #aaa; font-size: 10px; padding: 2px 6px; border-radius: 3px; font-weight: 600; }
+.picker-song .added-mark { color: #4caf50; font-size: 14px; width: 20px; text-align: center; }
+.picker-empty { text-align: center; padding: 32px; color: #555; font-size: 13px; }
+
+/* Performer badges */
+.performer-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; white-space: nowrap; flex-shrink: 0; cursor: pointer; border: 1px solid transparent; }
+.performer-badge.pf-none { background: #222; color: #777; border-color: #444; }
+.performer-badge.pf-valery { background: #3d2e10; color: #d4a437; border-color: #5a4218; }
+.performer-badge.pf-angie { background: #331821; color: #d4607a; border-color: #4d2430; }
+
+/* Placeholder slot */
+.setlist-song.placeholder { border-left: 2px dashed #555; }
+.setlist-song.placeholder .title { font-style: italic; color: #666; }
+
+/* Add placeholder button */
+.add-slot-btn { display: block; width: calc(100% - 32px); margin: 4px 16px 8px; padding: 8px; background: transparent; border: 1px dashed #2a2a2a; border-radius: 8px; color: #555; font-size: 12px; cursor: pointer; text-align: center; }
+.add-slot-btn:active { border-color: #888; color: #aaa; }
+
+/* Performer popup */
+.popup-backdrop { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 165; }
+.popup-backdrop.show { display: block; }
+.performer-popup { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #1c1c1c; border-radius: 16px 16px 0 0; z-index: 170; padding: 20px; }
+.performer-popup.show { display: block; }
+.performer-popup h4 { font-size: 13px; color: #888; margin-bottom: 12px; }
+.performer-popup .pf-option { display: block; width: 100%; padding: 12px 14px; margin-bottom: 4px; background: #252525; border: 1px solid #333; border-radius: 8px; color: #e0e0e0; font-size: 15px; cursor: pointer; text-align: left; }
+.performer-popup .pf-option:active { background: #333; }
+.performer-popup .pf-option .pf-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
+.performer-popup .pf-option .pf-dot.valery { background: #d4a437; }
+.performer-popup .pf-option .pf-dot.angie { background: #d4607a; }
+.performer-popup .pf-option .pf-dot.none { background: #555; }
+
+/* Import tag helper buttons */
+.tag-helpers { display: flex; gap: 6px; margin-top: 8px; }
+.tag-btn { padding: 6px 12px; background: #252525; border: 1px solid #333; border-radius: 6px; color: #aaa; font-size: 12px; cursor: pointer; white-space: nowrap; }
+.tag-btn:active { background: #333; border-color: #6c8cff; color: #fff; }
+
+/* WeChat text output */
+.wechat-output { margin-top: 12px; display: none; }
+.wechat-output.show { display: block; }
+.wechat-output textarea { width: 100%; height: 300px; background: #252525; border: 1px solid #333; border-radius: 8px; color: #e0e0e0; padding: 12px; font-size: 12px; font-family: 'SF Mono', 'Menlo', 'Consolas', monospace; resize: vertical; }
+
+/* Ribbon reminder */
+.ribbon { display: none; padding: 10px 16px; background: #1a1a2e; border-bottom: 1px solid #2a2a3e; font-size: 13px; color: #aab8e0; text-align: center; cursor: pointer; user-select: none; }
+.ribbon.show { display: block; }
+.ribbon:active { background: #1e1e36; }
+.ribbon .ribbon-count { font-weight: 700; color: #6c8cff; }
+.ribbon .ribbon-dismiss { float: right; color: #555; font-size: 15px; margin-left: 8px; }
+</style>
+</head>
+<body>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('songs')">🎵 Songs</div>
+  <div class="tab" onclick="switchTab('setlist')">📋 Setlist <span class="badge" id="setlistCount">0</span></div>
+  <div class="tab" onclick="switchTab('import')">📥 Import</div>
+</div>
+
+<div id="tab-songs">
+  <div class="ribbon" id="ribbon" onclick="switchTab('songs')">
+    <span id="ribbonText"></span>
+    <span class="ribbon-dismiss" onclick="event.stopPropagation(); dismissRibbon()">✕</span>
+  </div>
+  <div class="search-bar">
+    <input class="search-input" id="search" placeholder="Search songs..." oninput="renderSongs()">
+  </div>
+  <div class="filters" id="genreFilters"></div>
+  <div class="filters" id="singerFilters"></div>
+  <div class="song-list" id="songList"></div>
+</div>
+
+<div id="tab-setlist" style="display:none">
+  <div class="setlist-header">
+    <h2>Performance Sets</h2>
+    <div>
+      <button class="btn" onclick="exportSetlist()">Export</button>
+      <button class="btn" onclick="exportJSON()" style="background:#2a3a2a;">Save .json</button>
+      <button class="btn" onclick="exportWeChat()" style="background:#1a2a1a;">WeChat Text</button>
+      <button class="btn danger" onclick="clearSetlist()">Clear All</button>
+    </div>
+  </div>
+  <div id="setlistSongs"></div>
+  <div class="wechat-output" id="wechatOutput">
+    <p style="font-size:12px;color:#888;margin:0 16px 6px;">📱 Ready to paste into WeChat — tap to copy:</p>
+    <textarea id="wechatText" readonly onclick="this.select(); navigator.clipboard.writeText(this.value).then(() => toast('Copied! Paste into WeChat 📱'))"></textarea>
+  </div>
+  <button class="add-set-btn" onclick="addSet()">+ Add Set</button>
+</div>
+
+<div id="tab-import" style="display:none">
+  <div class="import-area">
+    <p style="margin-bottom:8px;color:#888;font-size:14px;">Paste iReal Pro export or song list:</p>
+    <textarea id="importText" placeholder="1 - Song Name (Key)
+2 - Another Song (Bb)"></textarea>
+    <p class="hint">
+      <strong>🎤 Singer Tag:</strong> line starting with <code>_Name</code> labels all songs below with that singer.<br>
+      <strong>📥 Slot Tag:</strong> <code>_slot Name</code> creates an empty placeholder for that singer.<br>
+      Imports start uncategorized — edit to assign genre.
+    </p>
+    <div class="tag-helpers">
+      <button class="tag-btn" onclick="insertTag('_Valery')">🎤 Singer Tag</button>
+      <button class="tag-btn" onclick="insertTag('_slot Valery')">📥 Slot Tag</button>
+    </div>
+    <button class="btn" onclick="doImport()">Import Songs</button>
+    <div class="result" id="importResult"></div>
+    <hr style="border-color:#2a2a2a; margin: 20px 0;">
+    <p style="margin-bottom:8px;color:#888;font-size:14px;">📦 Load shared setlist file:</p>
+    <input type="file" id="jsonFileInput" accept=".json" style="display:none" onchange="handleFileImport(this.files[0])">
+    <button class="btn" onclick="document.getElementById('jsonFileInput').click()" style="background:#333;">Load .json Setlist</button>
+    <p class="hint">Share full setlists as files via WeChat or Telegram. Songs + sets + performers all included.</p>
+  </div>
+</div>
+
+<div class="modal" id="editModal">
+  <div class="modal-content">
+    <h3>Edit Song</h3>
+    <label>Title</label>
+    <input id="editTitle">
+    <label>Key</label>
+    <input id="editKey" placeholder="C, F#, Bb-, E-">
+    <label class="required">Genre</label>
+    <select id="editGenre">
+      <option value="">-- Select genre --</option>
+    </select>
+    <label>BPM</label>
+    <input id="editBpm" type="number" placeholder="120">
+    <label>Singer / Project</label>
+    <input id="editSinger" placeholder="Valery, Oasis...">
+    <label>Notes</label>
+    <input id="editNotes" placeholder="Arrangement notes...">
+    <div class="modal-actions">
+      <button class="btn cancel" onclick="closeEdit()">Cancel</button>
+      <button class="btn save" onclick="saveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Song picker modal -->
+<div class="picker-modal" id="pickerModal">
+  <div class="picker-header">
+    <h3 id="pickerTitle">Add Song to Set 1</h3>
+    <button class="close-picker" onclick="closeSongPicker()">✕</button>
+  </div>
+  <div class="picker-search">
+    <input type="text" id="pickerSearch" placeholder="Search songs..." oninput="renderPicker()">
+  </div>
+  <div class="picker-genres" id="pickerPerformers" style="display:none"></div>
+  <div class="picker-genres" id="pickerGenres"></div>
+  <div class="picker-list" id="pickerList"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// --- Genre definitions ---
+const GENRES = ['Swing', 'Bossa', 'Ballad', 'Jazz', 'Pop', 'Dance', 'Funk', 'Soul', 'Latin', 'Waltz', '6/8', 'Chinese', 'Christmas'];
+const GENRE_CLASS = {
+  'Swing': 'g-swing', 'Bossa': 'g-bossa', 'Ballad': 'g-ballad',
+  'Jazz': 'g-jazz', 'Pop': 'g-pop', 'Dance': 'g-dance',
+  'Funk': 'g-funk', 'Soul': 'g-soul',
+  'Latin': 'g-latin', 'Waltz': 'g-waltz', '6/8': 'g-6-8',
+  'Chinese': 'g-chinese', 'Christmas': 'g-christmas'
+};
+
+// Performer config (customize for your singers)
+const PERFORMERS = ['Valery', 'Angie'];
+const PERFORMER_CLASS = { 'Valery': 'pf-valery', 'Angie': 'pf-angie' };
+
+// Genre assignments for seed songs (index 0–159, matches SEED_DATA order)
+const SEED_GENRES = [
+  'Chinese','Chinese','Jazz','Swing','Jazz','Ballad','Bossa','Ballad','Christmas','Swing',
+  'Swing','Ballad','Swing','Pop','Latin','Ballad','Latin','Ballad','Swing','Dance',
+  'Swing','Bossa','Swing','Swing','Pop','Jazz','Pop','Jazz','Swing','Bossa',
+  'Ballad','Bossa','Jazz','Jazz','Ballad','Bossa','Bossa','Pop','Jazz','Pop',
+  'Swing','Pop','Swing','Dance','Ballad','Ballad','Christmas','Pop','Christmas','Pop',
+  'Pop','Pop','Swing','Bossa','Jazz','Swing','Pop','Ballad','Ballad','Swing',
+  'Pop','Pop','Swing','Pop','Chinese','Chinese','Chinese','Chinese','Swing','Pop',
+  'Swing','Chinese','Ballad','Christmas','Christmas','Swing','Swing','Chinese','Pop','Pop',
+  'Jazz','Pop','Ballad','Swing','Ballad','Pop','Ballad','Swing','Jazz','Ballad',
+  'Chinese','Pop','Jazz','Swing','Jazz','Bossa','Swing','Pop','Latin','Pop',
+  'Pop','Chinese','Chinese','Ballad','Pop','Dance','Pop','Christmas','Swing','Bossa',
+  'Christmas','Swing','Ballad','Swing','Jazz','Ballad','Chinese','Dance','Ballad','Bossa',
+  'Ballad','Pop','Pop','Jazz','Swing','Swing','Swing','Swing','Swing','Swing',
+  'Bossa','Pop','Ballad','Chinese','Bossa','Bossa','Pop','Swing','Ballad','Christmas',
+  'Christmas','Swing','Chinese','Chinese','Chinese','Chinese','Pop','Pop','Chinese','Ballad',
+  'Pop','Swing','Jazz','Pop','Chinese','Pop','Chinese','Chinese','Jazz'
+];
+
+// --- Data ---
+const STORAGE_KEY = 'setlist_songs';
+const SETLIST_KEY = 'setlist_current';
+let songs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let sets = JSON.parse(localStorage.getItem(SETLIST_KEY) || '[]');
+let activeGenre = 'all';
+let activeSinger = 'all';
+let editId = null;
+let pickerTargetSet = -1;
+let pickerGenre = 'all';
+let pickerFillIdx = -1; // -1 = add mode, >=0 = fill placeholder at this index
+let pickerPerformer = ''; // performer to tag when adding songs
+let collapsedSets = {};
+
+// --- Initial load ---
+if (!songs.length) {
+  // >>> SEED_DATA_START (auto-generated by seed.js)
+  const SEED_DATA = [{"id":"seed_0","title":"Wan Shui Qian San","key":"Bb","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_1","title":"Kwang Chiu","key":"F","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_2","title":"500 Miles High","key":"E-","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_3","title":"A Foggy Day","key":"C","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_4","title":"A Night In Tunisia","key":"D-","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_5","title":"Affection","key":"C","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_6","title":"Agua De Beber","key":"A-","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_7","title":"Alfie","key":"F","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_8","title":"All I Want For Christmas","key":"F","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_9","title":"All Of You","key":"C","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_10","title":"All The Things You Are","key":"D","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_11","title":"Angel Eyes","key":"A-","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_12","title":"Autumn Leaves","key":"A-","bpm":"200","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_13","title":"Bad Company","key":"C","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_14","title":"Begin The Beguine","key":"G","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_15","title":"Beneath The Surface","key":"E","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_16","title":"Besame Mucho","key":"G-","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_17","title":"Bewitched","key":"A","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_18","title":"Beyond The Sea","key":"Bb","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_19","title":"Blood On The Dance Floor","key":"F-","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_20","title":"Blue Moon","key":"Ab","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_21","title":"Brazil","key":"Bb","bpm":"120","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_22","title":"But Not For Me","key":"Bb","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_23","title":"Bye Bye Blackbird","key":"C","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_24","title":"Can't Hide Love","key":"F","bpm":"115","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_25","title":"Caravan","key":"G-","bpm":"135","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_26","title":"Chain Of Life","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_27","title":"Cheapest Flight","key":"C-","bpm":"80","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_28","title":"Cheek To Cheek 180","key":"F","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_29","title":"Chega De Saudade","key":"C-","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_30","title":"Close To You 88bpm","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_31","title":"Corcovado","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_32","title":"Crazy Race","key":"Eb-","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_33","title":"Day And Night","key":"E-","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_34","title":"The Days of Wine and Rose","key":"Bb","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_35","title":"Desafinado","key":"D","bpm":"","singer":"Oasis_Valery","project":"Original","notes":""},{"id":"seed_36","title":"Desafinado","key":"D","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_37","title":"Dirty Work","key":"Bb","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_38","title":"Don't Break My Heart","key":"G#-","bpm":"","singer":"Oasis_Valery","project":"Oasis 115","notes":""},{"id":"seed_39","title":"Don't Know Why 92 Bb","key":"Bb","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_40","title":"Dream A Little Dream Of Me","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_41","title":"Easy","key":"F","bpm":"91","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_42","title":"Fascinating Rhythm 180","key":"Ab","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_43","title":"Fly Me To The Moon","key":"F","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_44","title":"Get Lucky","key":"A","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_45","title":"Good Morning Heartache","key":"G-","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_46","title":"Goodmorning Heartache","key":"Ab","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_47","title":"Happy Christmas","key":"B","bpm":"","singer":"Oasis_Valery","project":"War is over","notes":""},{"id":"seed_48","title":"Happy Days","key":"Ab","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_49","title":"Have Yourself A Merry  Little Christmas Lavo","key":"F","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_50","title":"Heal The World","key":"A","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_51","title":"Heal The World","key":"A","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_52","title":"Hold On Me","key":"A-","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_53","title":"Honeysuckle Rose","key":"Eb","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_54","title":"How Insensitive","key":"A-","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_55","title":"How It's Done","key":"E-","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_56","title":"I Can't Give You Anything But Love","key":"Bb","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_57","title":"I Just Can't Stop Loving You","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_58","title":"I Loves You Porgy","key":"Ab","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_59","title":"I Wish You Love","key":"D","bpm":"110","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_60","title":"I've Got You Under My Skin","key":"A","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_61","title":"Isn't She Lovely?","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_62","title":"Isn't She Lovely","key":"Eb","bpm":"104","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_63","title":"It Don't Mean A Thing","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_64","title":"It's Gonna Be Alright","key":"Bb","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_65","title":"Jian Dan Ai","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_66","title":"Jing Feng Yu Lu","key":"G","bpm":"93","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_67","title":"K Ge Zhi Wang","key":"Ab","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_68","title":"Ke Ai Nu Ren","key":"Ab","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_69","title":"L-O-V-E","key":"F","bpm":"150","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_70","title":"Lady In My Life","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_71","title":"Lady is a Tramp, The","key":"F","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_72","title":"Lang Zi Xin Sheng","key":"Bb","bpm":"90","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_73","title":"Laura","key":"G","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_74","title":"Let It Snow!","key":"C","bpm":"130","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_75","title":"Let It Snow!","key":"C","bpm":"135","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_76","title":"Let's Fall In Love","key":"F","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_77","title":"Let's Get Lost","key":"G","bpm":"150","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_78","title":"Lian Qu 1990","key":"B","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_79","title":"Little L","key":"Ab","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_80","title":"Look To The Sky","key":"Eb","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_81","title":"Lost & Found","key":"C","bpm":"77","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_82","title":"Love Never Felt So Good","key":"Ab","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_83","title":"Lover Man","key":"Db","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_84","title":"Lullaby Of Birdland","key":"D","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_85","title":"The Man I Love","key":"G","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_86","title":"Messages From The Stars","key":"C-","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_87","title":"Moonlight In Vermont","key":"Bb","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_88","title":"Moonlight Serenade","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_89","title":"My Favorite Things","key":"C-","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_90","title":"My Funny Valentine","key":"Bb","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_91","title":"Nanhai Gu Niang","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_92","title":"Never Stop","key":"D","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_93","title":"Nica's Dream","key":"Bb-","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_94","title":"Night And Day","key":"Bb","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_95","title":"Night In Tunisia, A","key":"Bb-","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_96","title":"Once I Loved","key":"G-","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_97","title":"Our Love is Here to Stay","key":"Eb","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_98","title":"Overjoyed","key":"Eb","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_99","title":"Perhaps, Perhaps, Perhaps","key":"A-","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_100","title":"Plastic Love","key":"C","bpm":"104","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_101","title":"Probably Up","key":"C","bpm":"96","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_102","title":"Qing Ren Di Yan Lei","key":"Bb","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_103","title":"Qing Ren Di Yan Lei(Oasis)","key":"Bb","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_104","title":"Real Love","key":"D-","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_105","title":"Remember The Time","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_106","title":"Rock With  You","key":"Eb-","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_107","title":"Rocket Science","key":"C#-","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_108","title":"Rudolf The Red Nose 130","key":"G","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_109","title":"S' Wonderful","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_110","title":"Sabor A Mi","key":"C","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_111","title":"Santa Claus Is Coming To Town","key":"Ab","bpm":"","singer":"Oasis_Valery","project":"Gig","notes":""},{"id":"seed_112","title":"Satin Doll","key":"F","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_113","title":"Save Your Love For Me","key":"Eb","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_114","title":"September In The Rain","key":"Bb","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_115","title":"Shade Of Blue","key":"Bb","bpm":"","singer":"Oasis_Valery","project":"Oasis 82","notes":""},{"id":"seed_116","title":"Shadow Of Your Smile, The","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_117","title":"Shi Lou Sha Zhou","key":"G","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_118","title":"Sledgehammer","key":"Eb-","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_119","title":"So Many Stars","key":"Db","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_120","title":"So Nice","key":"D","bpm":"","singer":"Oasis_Valery","project":"Summer Samba","notes":""},{"id":"seed_121","title":"Someone To Watch Over Me","key":"Ab","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_122","title":"Sunny","key":"A-","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_123","title":"Sunset","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_124","title":"Take 5","key":"Eb-","bpm":"165","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_125","title":"Take The A Train","key":"Eb","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_126","title":"Tea For Two","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_127","title":"There Will Never Be Another You","key":"Bb","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_128","title":"This Can't Be Love","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_129","title":"This Can't Be Love","key":"C","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_130","title":"Time After Time","key":"F","bpm":"","singer":"Oasis_Valery","project":"Oasis 145","notes":""},{"id":"seed_131","title":"Triste","key":"Ab","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_132","title":"Undone","key":"A","bpm":"110","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_133","title":"Unforgettable","key":"C","bpm":"60","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_134","title":"Wan Shui Qian San 万水 115 bossa","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_135","title":"Wave","key":"D","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_136","title":"Wave","key":"D","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_137","title":"Weak","key":"G","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_138","title":"What A Difference A Day Made","key":"B","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_139","title":"When I Fall In Love","key":"G","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_140","title":"White Christmas","key":"Bb","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_141","title":"White Christmas","key":"Bb","bpm":"130","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_142","title":"Who's got you singing again","key":"C","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_143","title":"Wo You Yi Duan Qing","key":"Bb","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_144","title":"Xiang Ni Shi Feng Qi","key":"Gb","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_145","title":"Xiang Si He Pan(Oasis)102","key":"A","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_146","title":"Ye Lai Xiang","key":"G","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_147","title":"You Are The Universe","key":"Bb","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_148","title":"Your World","key":"Db","bpm":"","singer":"Oasis_Valery","project":"Oasis","notes":""},{"id":"seed_149","title":"Yue Liang Dai 月亮代表我的心","key":"C","bpm":"","singer":"Oasis_Valery","project":"Gig","notes":""},{"id":"seed_150","title":"Beautiful Love","key":"G-","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_151","title":"Feel Like Makin' Love - 92bpm","key":"Eb","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_152","title":"Sunday Kinda Love","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_153","title":"Stella By Starlight","key":"F","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_154","title":"Rocky Steady","key":"G","bpm":"","singer":"Oasis_Valery","project":"Val","notes":""},{"id":"seed_155","title":"You Ling Kai Shi","key":"C","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_156","title":"Tough Days","key":"A","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_157","title":"Pu Tong Peng You","key":"G","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_158","title":"R&B all night","key":"D","bpm":"","singer":"Oasis_Valery","project":"","notes":""},{"id":"seed_159","title":"Invitation","key":"C-","bpm":"","singer":"Oasis_Valery","project":"","notes":""}];
+
+  // Apply genre assignments to seed data
+  SEED_DATA.forEach((song, i) => {
+    song.genre = SEED_GENRES[i] || '';
+  });
+  songs = SEED_DATA;
+  // <<< SEED_DATA_END
+}
+
+// Migration: ensure all existing localStorage songs have a genre field
+songs.forEach(s => {
+  if (s.genre === undefined) s.genre = '';
+});
+
+// Migration: old flat setlist → new multi-set format
+if (sets.length && !sets[0].songs) {
+  // Old format: flat array of songs → wrap in Set 1
+  sets = [{ name: 'Set 1', songs: sets }];
+  save();
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(songs));
+  localStorage.setItem(SETLIST_KEY, JSON.stringify(sets));
+  updateCounts();
+}
+
+// --- Song parsing ---
+function parseSongs(text) {
+  const lines = text.trim().split('\n').filter(l => l.trim());
+  const parsed = [];
+  let singer = '';
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('_')) {
+      // Check for _slot Name → create placeholder
+      const slotMatch = trimmed.match(/^_slot\s+(.+)/i);
+      if (slotMatch) {
+        parsed.push({
+          id: 'slot_' + Date.now() + '_' + parsed.length,
+          title: '', key: '', bpm: '', singer: '', project: '', genre: '', notes: '',
+          performer: slotMatch[1].trim(),
+          _placeholder: true
+        });
+        continue;
+      }
+      // Regular _Name → set singer for following songs
+      singer = trimmed.replace(/^_+/, '').trim();
+      continue;
+    }
+
+    const match = line.match(/^(\d+)\s*[-–]\s*(.+?)\s*\(([A-G][#b]?[m-]?)\)\s*$/);
+    if (!match) continue;
+
+    const [, num, titleRaw, key] = match;
+    let title = titleRaw.trim();
+    let project = '';
+    let bpm = null;
+
+    const projectMatch = title.match(/^(.+?)\(([^)]+)\)\s*$/);
+    if (projectMatch) {
+      title = projectMatch[1].trim();
+      const tag = projectMatch[2].trim();
+      const bpmMatch = tag.match(/(\d+)\s*bpm/i);
+      if (bpmMatch) {
+        bpm = parseInt(bpmMatch[1]);
+        project = tag.replace(/\d+\s*bpm/i, '').trim();
+      } else {
+        project = tag;
+      }
+    }
+
+    title = title.replace(/\s+\d+\s+\d+\s*$/, '').trim();
+    title = title.replace(/\s+[12]$/, '').trim();
+
+    parsed.push({
+      id: crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36),
+      title,
+      key: key.replace('m', '-').replace('M', ''),
+      bpm: bpm || '',
+      singer: singer || '',
+      project: project || '',
+      genre: '', // imported songs start uncategorized
+      notes: ''
+    });
+  }
+  return parsed;
+}
+
+// --- Render ---
+function getGenreCounts() {
+  const counts = {};
+  songs.forEach(s => {
+    const g = s.genre || '__none__';
+    counts[g] = (counts[g] || 0) + 1;
+  });
+  return counts;
+}
+
+function getUniqueSingers() {
+  return [...new Set(songs.map(s => s.singer).filter(Boolean))].sort();
+}
+
+function renderFilters() {
+  const counts = getGenreCounts();
+  const total = songs.length;
+  const html = ['<span class="filter ' + (activeGenre === 'all' ? 'active' : '') + '" onclick="setGenreFilter(\'all\')">All <span style="opacity:0.6">' + total + '</span></span>'];
+
+  GENRES.forEach(g => {
+    const count = counts[g] || 0;
+    if (count > 0) {
+      const cls = 'filter genre-' + g.toLowerCase() + (activeGenre === g ? ' active' : '');
+      html.push('<span class="' + cls + '" onclick="setGenreFilter(\'' + g + '\')">' + g + ' <span style="opacity:0.6">' + count + '</span></span>');
+    }
+  });
+
+  // Uncategorized (if any)
+  if (counts['__none__']) {
+    html.push('<span class="filter ' + (activeGenre === '__none__' ? 'active' : '') + '" onclick="setGenreFilter(\'__none__\')">— <span style="opacity:0.6">' + counts['__none__'] + '</span></span>');
+  }
+
+  document.getElementById('genreFilters').innerHTML = html.join('');
+
+  const singers = getUniqueSingers();
+  if (singers.length > 1) {
+    const singerHtml = ['<span class="filter ' + (activeSinger === 'all' ? 'active' : '') + '" onclick="setSingerFilter(\'all\')">All Singers</span>'];
+    singers.forEach(s => {
+      singerHtml.push('<span class="filter ' + (activeSinger === s ? 'active' : '') + '" onclick="setSingerFilter(\'' + s + '\')">' + s + '</span>');
+    });
+    document.getElementById('singerFilters').innerHTML = singerHtml.join('');
+    document.getElementById('singerFilters').style.display = 'flex';
+  } else {
+    document.getElementById('singerFilters').style.display = 'none';
+  }
+}
+
+function genreSortOrder(g) {
+  const idx = GENRES.indexOf(g);
+  return idx >= 0 ? idx : 999; // uncategorized at bottom
+}
+
+function updateRibbon() {
+  const uncat = songs.filter(s => !s.genre).length;
+  const ribbon = document.getElementById('ribbon');
+  const dismissed = localStorage.getItem('ribbon_dismissed');
+  const today = new Date().toISOString().slice(0, 10);
+  if (uncat > 0 && dismissed !== today) {
+    document.getElementById('ribbonText').innerHTML = '📋 <span class="ribbon-count">' + uncat + '</span> song' + (uncat > 1 ? 's' : '') + ' need genre labels — tap any song to edit';
+    ribbon.classList.add('show');
+  } else {
+    ribbon.classList.remove('show');
+  }
+}
+
+function dismissRibbon() {
+  document.getElementById('ribbon').classList.remove('show');
+  const today = new Date().toISOString().slice(0, 10);
+  localStorage.setItem('ribbon_dismissed', today);
+  toast('Dismissed — will remind you tomorrow');
+}
+
+function renderSongs() {
+  const search = document.getElementById('search').value.toLowerCase();
+  let filtered = songs;
+
+  if (activeGenre !== 'all') {
+    if (activeGenre === '__none__') {
+      filtered = filtered.filter(s => !s.genre);
+    } else {
+      filtered = filtered.filter(s => s.genre === activeGenre);
+    }
+  }
+  if (activeSinger !== 'all') filtered = filtered.filter(s => s.singer === activeSinger);
+  if (search) {
+    filtered = filtered.filter(s =>
+      s.title.toLowerCase().includes(search) ||
+      s.key.toLowerCase().includes(search) ||
+      (s.singer || '').toLowerCase().includes(search) ||
+      (s.project || '').toLowerCase().includes(search) ||
+      (s.genre || '').toLowerCase().includes(search)
+    );
+  }
+
+  // Sort: by genre order, then alphabetically by title
+  filtered.sort((a, b) => {
+    const ga = genreSortOrder(a.genre || '');
+    const gb = genreSortOrder(b.genre || '');
+    if (ga !== gb) return ga - gb;
+    return a.title.localeCompare(b.title);
+  });
+
+  const inAnySet = new Set();
+  sets.forEach(set => set.songs.forEach(s => inAnySet.add(s.id)));
+  const html = filtered.length
+    ? filtered.map((s, i) => {
+        const g = s.genre || '';
+        const gCls = g ? (GENRE_CLASS[g] || 'g-none') : 'g-none';
+        const gLabel = g || '—';
+        return `
+      <div class="song" onclick="openEdit('${s.id}')">
+        <span class="num">${i + 1}</span>
+        <div class="info">
+          <div class="title">${esc(s.title)}</div>
+          <div class="meta">${[s.singer, s.project, s.bpm ? s.bpm + 'bpm' : ''].filter(Boolean).join(' · ')}</div>
+        </div>
+        <span class="genre-tag ${gCls}">${gLabel}</span>
+        <span class="key">${s.key}</span>
+        <button class="add ${inAnySet.has(s.id) ? 'added' : ''}" onclick="event.stopPropagation(); toggleSetlist('${s.id}')">
+          ${inAnySet.has(s.id) ? '✓' : '+'}
+        </button>
+      </div>
+    `}).join('')
+    : '<div class="empty"><p>No songs found</p></div>';
+
+  document.getElementById('songList').innerHTML = html;
+  renderFilters();
+  updateCounts();
+  updateRibbon();
+}
+
+function renderSetlist() {
+  let html = '';
+  if (sets.length) {
+    html = sets.map((set, si) => {
+      const collapsed = collapsedSets[si];
+      return `
+      <div class="set-section">
+        <div class="set-header" onclick="toggleSetCollapse(${si})">
+          <span class="set-arrow${collapsed ? ' collapsed' : ''}">▼</span>
+          <span class="set-name" onclick="event.stopPropagation(); renameSet(${si})">${esc(set.name)}</span>
+          <span class="set-count">${set.songs.length} songs</span>
+          <div class="set-actions">
+            <button onclick="event.stopPropagation(); renameSet(${si})" title="Rename">✎</button>
+            <button class="del-set" onclick="event.stopPropagation(); removeSet(${si})" title="Delete set">🗑</button>
+          </div>
+        </div>
+        <div class="set-songs${collapsed ? ' collapsed' : ''}">
+          ${set.songs.length ? set.songs.map((s, i) => {
+            const isPlaceholder = s._placeholder;
+            const g = s.genre || '';
+            const gCls = g ? (GENRE_CLASS[g] || 'g-none') : 'g-none';
+            const gLabel = g || '';
+            const pf = s.performer || '';
+            const pfCls = pf ? (PERFORMER_CLASS[pf] || 'pf-none') : 'pf-none';
+            const pfLabel = pf || '—';
+            const titleDisplay = isPlaceholder ? (pf ? '[' + pf + ' ———]' : '[ ——— ]') : esc(s.title);
+            const metaDisplay = isPlaceholder ? 'tap to fill' : [s.singer, s.key, s.bpm ? s.bpm + 'bpm' : ''].filter(Boolean).join(' · ');
+            const keyDisplay = isPlaceholder ? '—' : s.key;
+            return `
+          <div class="setlist-song${isPlaceholder ? ' placeholder' : ''}" onclick="${isPlaceholder ? 'fillSlot(' + si + ',' + i + ')' : ''}">
+            <span class="order">${i + 1}</span>
+            <div class="info">
+              <div class="title">${titleDisplay}</div>
+              <div class="meta">${metaDisplay}</div>
+            </div>
+            ${gLabel && !isPlaceholder ? '<span class="genre-tag ' + gCls + '">' + gLabel + '</span>' : ''}
+            <span class="performer-badge ${pfCls}" onclick="event.stopPropagation(); cyclePerformer(${si}, ${i})">${pfLabel}</span>
+            ${!isPlaceholder ? '<span class="key">' + keyDisplay + '</span>' : ''}
+            <button class="reorder-btn" onclick="event.stopPropagation(); moveSongUp(${si}, ${i})" ${i === 0 ? 'disabled' : ''}>▲</button>
+            <button class="reorder-btn" onclick="event.stopPropagation(); moveSongDown(${si}, ${i})" ${i === set.songs.length - 1 ? 'disabled' : ''}>▼</button>
+            <button class="remove" onclick="event.stopPropagation(); removeSongFromSet(${si}, ${i})">✕</button>
+          </div>`;
+          }).join('') : '<div class="empty" style="padding:20px"><p>No songs yet</p></div>'}
+          <button class="add-song-btn" onclick="openSongPicker(${si})">+ Add Song to ${esc(set.name)}</button>
+          <button class="add-slot-btn" onclick="addPlaceholder(${si})">+ Slot</button>
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    html = '<div class="empty"><p>No sets yet</p><p style="font-size:12px;">Tap "+ Add Set" to start building your setlist</p></div>';
+  }
+
+  document.getElementById('setlistSongs').innerHTML = html;
+  document.getElementById('wechatOutput').classList.remove('show');
+  updateCounts();
+}
+
+function updateCounts() {
+  let total = 0;
+  sets.forEach(s => total += s.songs.length);
+  document.getElementById('setlistCount').textContent = total;
+}
+
+// --- Actions ---
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['songs','setlist','import'][i] === tab);
+  });
+  document.getElementById('tab-songs').style.display = tab === 'songs' ? 'block' : 'none';
+  document.getElementById('tab-setlist').style.display = tab === 'setlist' ? 'block' : 'none';
+  document.getElementById('tab-import').style.display = tab === 'import' ? 'block' : 'none';
+  if (tab === 'setlist') renderSetlist();
+  if (tab === 'songs') renderSongs();
+}
+
+function setGenreFilter(genre) {
+  activeGenre = genre;
+  renderSongs();
+}
+
+function setSingerFilter(singer) {
+  activeSinger = singer;
+  renderSongs();
+}
+
+// --- Setlist actions ---
+function toggleSetlist(id) {
+  // Check if song is already in any set — remove it
+  for (const set of sets) {
+    const idx = set.songs.findIndex(s => s.id === id);
+    if (idx >= 0) {
+      set.songs.splice(idx, 1);
+      // Remove empty sets
+      sets = sets.filter(s => s.songs.length > 0 || sets.length === 1);
+      save();
+      renderSongs();
+      return;
+    }
+  }
+  // Not in any set — add to Set 1 (create if needed)
+  if (!sets.length) sets.push({ name: 'Set 1', songs: [] });
+  const song = songs.find(s => s.id === id);
+  if (song) sets[0].songs.push({...song, performer: '', _placeholder: false});
+  save();
+  renderSongs();
+}
+
+function removeSongFromSet(setIdx, songIdx) {
+  sets[setIdx].songs.splice(songIdx, 1);
+  save();
+  renderSetlist();
+  renderSongs();
+}
+
+function moveSongUp(setIdx, songIdx) {
+  if (songIdx <= 0) return;
+  const s = sets[setIdx].songs;
+  [s[songIdx - 1], s[songIdx]] = [s[songIdx], s[songIdx - 1]];
+  save();
+  renderSetlist();
+}
+
+function moveSongDown(setIdx, songIdx) {
+  const s = sets[setIdx].songs;
+  if (songIdx >= s.length - 1) return;
+  [s[songIdx], s[songIdx + 1]] = [s[songIdx + 1], s[songIdx]];
+  save();
+  renderSetlist();
+}
+
+function addSet() {
+  const n = sets.length + 1;
+  sets.push({ name: 'Set ' + n, songs: [] });
+  save();
+  renderSetlist();
+}
+
+function removeSet(setIdx) {
+  if (!confirm('Delete "' + sets[setIdx].name + '" and all its songs?')) return;
+  sets.splice(setIdx, 1);
+  // Renumber remaining sets
+  sets.forEach((s, i) => { s.name = s.name.replace(/\d+/, String(i + 1)); });
+  save();
+  renderSetlist();
+  renderSongs();
+}
+
+function renameSet(setIdx) {
+  const name = prompt('Set name:', sets[setIdx].name);
+  if (name && name.trim()) {
+    sets[setIdx].name = name.trim();
+    save();
+    renderSetlist();
+  }
+}
+
+function toggleSetCollapse(setIdx) {
+  collapsedSets[setIdx] = !collapsedSets[setIdx];
+  renderSetlist();
+}
+
+function clearSetlist() {
+  if (sets.length && confirm('Clear ALL sets?')) {
+    sets = [];
+    save();
+    renderSetlist();
+    renderSongs();
+  }
+}
+
+function exportSetlist() {
+  if (!sets.length) return toast('Nothing to export');
+  let text = '_Performance\n\n';
+  sets.forEach((set, si) => {
+    text += '=== ' + set.name + ' ===\n';
+    if (!set.songs.length) {
+      text += '(empty)\n\n';
+      return;
+    }
+    set.songs.forEach((s, i) => {
+      const pf = s.performer ? s.performer + ' - ' : '';
+      const title = s._placeholder ? '[ ——— ]' : s.title;
+      const parts = [title];
+      if (!s._placeholder && s.project) parts[0] = s.title + '(' + s.project + (s.bpm ? ' ' + s.bpm + 'bpm' : '') + ')';
+      text += (i + 1) + ' ' + pf + '- ' + parts[0] + ' (' + (s._placeholder ? '' : s.key) + ')\n';
+    });
+    text += '\n';
+  });
+  navigator.clipboard.writeText(text).then(() => toast('Copied to clipboard'));
+}
+
+// --- JSON file export/import ---
+function exportJSON() {
+  if (!sets.length) return toast('Nothing to export');
+  // Collect all songs referenced in the setlist (not placeholders)
+  const songIds = new Set();
+  sets.forEach(set => set.songs.forEach(s => { if (!s._placeholder) songIds.add(s.id); }));
+  const embeddedSongs = songs.filter(s => songIds.has(s.id));
+
+  const data = {
+    type: 'setlist-builder',
+    version: 1,
+    exported: new Date().toISOString(),
+    songs: embeddedSongs,
+    sets: sets.map(set => ({
+      name: set.name,
+      songs: set.songs.map(s => ({
+        id: s.id,
+        performer: s.performer || '',
+        _placeholder: s._placeholder || false
+      }))
+    }))
+  };
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'setlist-' + new Date().toISOString().slice(0,10) + '.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('💾 Setlist saved as .json');
+}
+
+function handleFileImport(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.type !== 'setlist-builder') throw new Error('Not a setlist file');
+
+      // Import songs (merge, skip duplicates by id)
+      const existingIds = new Set(songs.map(s => s.id));
+      const newSongs = (data.songs || []).filter(s => !existingIds.has(s.id));
+      if (newSongs.length) {
+        songs = [...songs, ...newSongs];
+        songs.forEach(s => { if (s.genre === undefined) s.genre = ''; });
+      }
+
+      // Load sets (ask before replacing)
+      if (data.sets && data.sets.length) {
+        if (sets.length && sets.some(s => s.songs.length > 0)) {
+          if (!confirm('Replace current setlist with the imported one?')) return;
+        }
+        sets = data.sets.map(set => ({
+          name: set.name,
+          songs: (set.songs || []).map(s => {
+            const full = songs.find(sg => sg.id === s.id);
+            if (s._placeholder || !full) {
+              return {
+                id: 'slot_' + Date.now() + '_' + Math.random().toString(36),
+                title: '', key: '', bpm: '', singer: '', project: '', genre: '', notes: '',
+                performer: s.performer || '',
+                _placeholder: true
+              };
+            }
+            return { ...full, performer: s.performer || '', _placeholder: false };
+          }).filter(s => s._placeholder || s.title) // drop unresolvable non-placeholders
+        }));
+      }
+
+      save();
+      renderSongs();
+      renderSetlist();
+      toast('📦 Loaded: ' + newSongs.length + ' songs, ' + sets.length + ' sets');
+      switchTab('setlist');
+    } catch (err) {
+      toast('❌ Invalid file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  // Reset input so same file can be re-loaded
+  document.getElementById('jsonFileInput').value = '';
+}
+
+function exportWeChat() {
+  if (!sets.length) return toast('Nothing to export');
+  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  // Build a clean text table suitable for WeChat
+  let text = '🎵  SETLIST  —  ' + today + '\n';
+  text += '━━━━━━━━━━━━━━━━━━━━\n\n';
+
+  sets.forEach((set, si) => {
+    text += '▸  ' + set.name.toUpperCase() + '  (' + set.songs.length + ' songs)\n';
+    text += '──────────────────────────\n';
+
+    // Figure out column widths from the data
+    const rows = set.songs.map((s, i) => {
+      const pf = s.performer ? s.performer : (s._placeholder ? 'OPEN' : '—');
+      const title = s._placeholder ? '[ ——— ]' : s.title;
+      const genre = s._placeholder ? '' : (s.genre || '');
+      const key = s._placeholder ? '' : s.key;
+      const bpm = s._placeholder ? '' : (s.bpm || '');
+      return { num: i + 1, pf, title, genre, key, bpm };
+    });
+
+    const maxPf = Math.max(...rows.map(r => r.pf.length), 3);
+    const maxTitle = Math.min(Math.max(...rows.map(r => r.title.length), 8), 36);
+    const maxGenre = Math.min(Math.max(...rows.map(r => r.genre.length), 3), 10);
+    const maxKey = Math.max(...rows.map(r => r.key.length), 2);
+
+    rows.forEach(r => {
+      const numStr = String(r.num).padStart(2, ' ');
+      const pfStr = r.pf.padEnd(maxPf, ' ');
+      const titleStr = r.title.padEnd(maxTitle, ' ').substring(0, maxTitle);
+      const genreStr = r.genre ? r.genre.padEnd(maxGenre, ' ') : ''.padEnd(maxGenre, ' ');
+      const keyStr = r.key.padEnd(maxKey, ' ');
+      const bpmStr = r.bpm ? r.bpm + 'bpm' : '';
+      text += numStr + '. ' + pfStr + '  ' + titleStr + '  ' + genreStr + '  ' + keyStr + '  ' + bpmStr + '\n';
+    });
+
+    text += '\n';
+  });
+
+  text += '━━━━━━━━━━━━━━━━━━━━\n';
+  let total = 0;
+  sets.forEach(s => total += s.songs.length);
+  text += 'Total: ' + total + ' songs across ' + sets.length + ' sets\n';
+
+  const output = document.getElementById('wechatOutput');
+  const ta = document.getElementById('wechatText');
+  ta.value = text;
+  output.classList.add('show');
+  // Auto-copy
+  navigator.clipboard.writeText(text).then(() => toast('📱 Copied! Paste into WeChat'));
+}
+
+// --- Performer & placeholder functions ---
+function cyclePerformer(setIdx, songIdx) {
+  const song = sets[setIdx].songs[songIdx];
+  const cur = song.performer || '';
+  const idx = PERFORMERS.indexOf(cur);
+  song.performer = idx < 0 || idx >= PERFORMERS.length - 1 ? '' : PERFORMERS[idx + 1];
+  save();
+  renderSetlist();
+}
+
+function addPlaceholder(setIdx) {
+  sets[setIdx].songs.push({
+    id: 'slot_' + Date.now(),
+    title: '', key: '', bpm: '', singer: '', project: '', genre: '', notes: '',
+    performer: '',
+    _placeholder: true
+  });
+  save();
+  renderSetlist();
+  toast('Slot added — tap to assign performer');
+}
+
+function fillSlot(setIdx, songIdx) {
+  pickerTargetSet = setIdx;
+  pickerFillIdx = songIdx;
+  pickerGenre = 'all';
+  const slot = sets[setIdx].songs[songIdx];
+  const pfLabel = slot.performer || 'this slot';
+  document.getElementById('pickerTitle').textContent = 'Fill slot for ' + pfLabel;
+  document.getElementById('pickerSearch').value = '';
+  document.getElementById('pickerModal').classList.add('show');
+  renderPicker();
+}
+
+function populateGenreDropdown() {
+  const select = document.getElementById('editGenre');
+  select.innerHTML = '<option value="">-- Select genre --</option>';
+  GENRES.forEach(g => {
+    select.innerHTML += '<option value="' + g + '">' + g + '</option>';
+  });
+}
+
+function openEdit(id) {
+  const song = songs.find(s => s.id === id);
+  if (!song) return;
+  editId = id;
+  populateGenreDropdown();
+  document.getElementById('editTitle').value = song.title;
+  document.getElementById('editKey').value = song.key;
+  document.getElementById('editGenre').value = song.genre || '';
+  document.getElementById('editBpm').value = song.bpm || '';
+  document.getElementById('editSinger').value = song.singer || '';
+  document.getElementById('editNotes').value = song.notes || '';
+  document.getElementById('editGenre').classList.remove('invalid');
+  document.getElementById('editModal').classList.add('show');
+}
+
+function closeEdit() {
+  editId = null;
+  document.getElementById('editModal').classList.remove('show');
+}
+
+function saveEdit() {
+  if (!editId) return;
+  const genre = document.getElementById('editGenre').value;
+  if (!genre) {
+    document.getElementById('editGenre').classList.add('invalid');
+    toast('Please select a genre');
+    return;
+  }
+  const song = songs.find(s => s.id === editId);
+  if (!song) return;
+  song.title = document.getElementById('editTitle').value.trim();
+  song.key = document.getElementById('editKey').value.trim();
+  song.genre = genre;
+  song.bpm = document.getElementById('editBpm').value.trim();
+  song.singer = document.getElementById('editSinger').value.trim();
+  song.notes = document.getElementById('editNotes').value.trim();
+  save();
+  closeEdit();
+  renderSongs();
+  toast('Song updated');
+}
+
+function doImport() {
+  const text = document.getElementById('importText').value.trim();
+  if (!text) {
+    document.getElementById('importResult').innerHTML = '<div class="result err">Paste some songs first</div>';
+    return;
+  }
+  const parsed = parseSongs(text);
+  if (!parsed.length) {
+    document.getElementById('importResult').innerHTML = '<div class="result err">No songs found. Format: 1 - Title (Key)</div>';
+    return;
+  }
+  const realSongs = parsed.filter(s => !s._placeholder);
+  const slots = parsed.filter(s => s._placeholder);
+  if (realSongs.length) {
+    songs = [...songs, ...realSongs];
+  }
+  if (slots.length) {
+    if (!sets.length) sets.push({ name: 'Set 1', songs: [] });
+    slots.forEach(s => sets[0].songs.push(s));
+  }
+  save();
+  let msg = '';
+  if (realSongs.length) msg += '✅ ' + realSongs.length + ' songs imported. ';
+  if (slots.length) msg += '📥 ' + slots.length + ' slots added to Set 1.';
+  document.getElementById('importResult').innerHTML = '<div class="result ok">' + msg + '</div>';
+  renderSongs();
+  switchTab('songs');
+}
+
+function insertTag(tag) {
+  const ta = document.getElementById('importText');
+  const start = ta.selectionStart;
+  const end = ta.selectionEnd;
+  const before = ta.value.substring(0, start);
+  const after = ta.value.substring(end);
+  // Add newline if not at start and previous char isn't newline
+  const prefix = (start > 0 && before[start - 1] !== '\n') ? '\n' : '';
+  const suffix = (end < ta.value.length && ta.value[end] !== '\n') ? '\n' : '';
+  ta.value = before + prefix + tag + suffix + after;
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = start + prefix.length + tag.length + suffix.length;
+  toast(tag.startsWith('_slot') ? '📥 Slot tag inserted' : '🎤 Singer tag inserted');
+}
+
+// --- Song picker modal ---
+function openSongPicker(setIdx) {
+  pickerTargetSet = setIdx;
+  pickerFillIdx = -1; // add mode
+  pickerGenre = 'all';
+  pickerPerformer = '';
+  document.getElementById('pickerTitle').textContent = 'Add to ' + sets[setIdx].name;
+  document.getElementById('pickerSearch').value = '';
+  document.getElementById('pickerModal').classList.add('show');
+  renderPicker();
+}
+
+function closeSongPicker() {
+  pickerTargetSet = -1;
+  pickerFillIdx = -1;
+  document.getElementById('pickerModal').classList.remove('show');
+  renderSetlist();
+  renderSongs();
+}
+
+function renderPicker() {
+  const search = document.getElementById('pickerSearch').value.toLowerCase();
+  const inSet = new Set();
+  if (pickerTargetSet >= 0 && pickerTargetSet < sets.length) {
+    sets[pickerTargetSet].songs.forEach(s => inSet.add(s.id));
+  }
+
+  let filtered = songs;
+  if (pickerGenre !== 'all') {
+    if (pickerGenre === '__none__') filtered = filtered.filter(s => !s.genre);
+    else filtered = filtered.filter(s => s.genre === pickerGenre);
+  }
+  if (search) {
+    filtered = filtered.filter(s =>
+      s.title.toLowerCase().includes(search) ||
+      s.key.toLowerCase().includes(search) ||
+      (s.singer || '').toLowerCase().includes(search) ||
+      (s.genre || '').toLowerCase().includes(search)
+    );
+  }
+
+  // Sort by genre then title
+  filtered.sort((a, b) => {
+    const ga = genreSortOrder(a.genre || '');
+    const gb = genreSortOrder(b.genre || '');
+    if (ga !== gb) return ga - gb;
+    return a.title.localeCompare(b.title);
+  });
+
+  // Performer chips (add mode only)
+  const pfDiv = document.getElementById('pickerPerformers');
+  if (pickerFillIdx < 0) {
+    let pfHtml = '<span class="picker-genre ' + (pickerPerformer === '' ? 'active' : '') + '" onclick="setPickerPerformer(\'\')">Anyone</span>';
+    PERFORMERS.forEach(p => {
+      pfHtml += '<span class="picker-genre ' + (pickerPerformer === p ? 'active' : '') + '" onclick="setPickerPerformer(\'' + p + '\')">' + p + '</span>';
+    });
+    pfDiv.innerHTML = pfHtml;
+    pfDiv.style.display = 'flex';
+  } else {
+    pfDiv.style.display = 'none';
+  }
+
+  // Genre chips
+  const counts = {};
+  filtered.forEach(s => { const g = s.genre || '__none__'; counts[g] = (counts[g] || 0) + 1; });
+  let chipHtml = '<span class="picker-genre ' + (pickerGenre === 'all' ? 'active' : '') + '" onclick="setPickerGenre(\'all\')">All</span>';
+  GENRES.forEach(g => {
+    if (counts[g]) chipHtml += '<span class="picker-genre ' + (pickerGenre === g ? 'active' : '') + '" onclick="setPickerGenre(\'' + g + '\')">' + g + '</span>';
+  });
+  if (counts['__none__']) chipHtml += '<span class="picker-genre ' + (pickerGenre === '__none__' ? 'active' : '') + '" onclick="setPickerGenre(\'__none__\')">—</span>';
+  document.getElementById('pickerGenres').innerHTML = chipHtml;
+
+  // Song list
+  const html = filtered.length
+    ? filtered.map(s => {
+        const g = s.genre || '';
+        const gCls = g ? (GENRE_CLASS[g] || 'g-none') : 'g-none';
+        return `
+      <div class="picker-song" onclick="pickSong('${s.id}')">
+        <span class="added-mark">${inSet.has(s.id) ? '✓' : ''}</span>
+        <div class="info">
+          <div class="title">${esc(s.title)}</div>
+          <div class="sub">${[s.genre || '—', s.key, s.bpm ? s.bpm + 'bpm' : ''].filter(Boolean).join(' · ')}</div>
+        </div>
+        <span class="genre-tag ${gCls}">${g || '—'}</span>
+      </div>`;
+      }).join('')
+    : '<div class="picker-empty">No songs match</div>';
+
+  document.getElementById('pickerList').innerHTML = html;
+}
+
+function setPickerGenre(genre) {
+  pickerGenre = genre;
+  renderPicker();
+}
+
+function setPickerPerformer(pf) {
+  pickerPerformer = pf;
+  renderPicker();
+}
+
+function pickSong(id) {
+  if (pickerTargetSet < 0) return;
+  const set = sets[pickerTargetSet];
+
+  // Fill mode: replace placeholder at pickerFillIdx, then auto-advance
+  if (pickerFillIdx >= 0) {
+    const song = songs.find(s => s.id === id);
+    if (!song) return;
+    const performer = set.songs[pickerFillIdx].performer || '';
+    set.songs[pickerFillIdx] = { ...song, performer, _placeholder: false };
+    save();
+
+    // Find next placeholder in this set (prefer same performer, then any)
+    let nextIdx = -1;
+    for (let i = pickerFillIdx + 1; i < set.songs.length; i++) {
+      if (set.songs[i]._placeholder) {
+        if (!performer || set.songs[i].performer === performer || !set.songs[i].performer) {
+          nextIdx = i; break;
+        }
+        if (nextIdx < 0) nextIdx = i; // fallback to any placeholder
+      }
+    }
+    // If none found forward, search from beginning
+    if (nextIdx < 0) {
+      for (let i = 0; i < pickerFillIdx; i++) {
+        if (set.songs[i]._placeholder) {
+          if (!performer || set.songs[i].performer === performer || !set.songs[i].performer) {
+            nextIdx = i; break;
+          }
+          if (nextIdx < 0) nextIdx = i;
+        }
+      }
+    }
+
+    if (nextIdx >= 0) {
+      pickerFillIdx = nextIdx;
+      const nextPf = set.songs[nextIdx].performer || 'next slot';
+      document.getElementById('pickerTitle').textContent = 'Fill: ' + nextPf;
+      document.getElementById('pickerSearch').value = '';
+      toast(song.title + ' ✓  → ' + nextPf);
+      renderPicker();
+    } else {
+      toast(song.title + ' ✓  — all slots filled!');
+      setTimeout(() => closeSongPicker(), 700);
+    }
+    return;
+  }
+
+  // Add mode: check if already in this set — remove
+  const idx = set.songs.findIndex(s => s.id === id);
+  if (idx >= 0) {
+    set.songs.splice(idx, 1);
+    toast('Removed from ' + set.name);
+  } else {
+    const song = songs.find(s => s.id === id);
+    if (song) {
+      set.songs.push({...song, performer: pickerPerformer, _placeholder: false});
+      const tag = pickerPerformer ? ' [' + pickerPerformer + ']' : '';
+      toast('Added' + tag + ' to ' + set.name);
+    }
+  }
+  save();
+  renderPicker();
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function esc(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// --- Init ---
+populateGenreDropdown();
+renderSongs();
+updateRibbon();
+</script>
+</body>
+</html>
