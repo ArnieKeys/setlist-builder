@@ -14,10 +14,10 @@
 <title>Setlist Builder</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; padding-bottom: 80px; }
+body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; padding-bottom: calc(80px + env(safe-area-inset-bottom)); }
 
 /* Tabs */
-.tabs { display: flex; background: #1a1a1a; position: sticky; top: 0; z-index: 10; border-bottom: 1px solid #2a2a2a; }
+.tabs { display: flex; background: #1a1a1a; position: sticky; top: 0; z-index: 10; border-bottom: 1px solid #2a2a2a; padding-top: env(safe-area-inset-top); }
 .tab { flex: 1; text-align: center; padding: 14px 8px; font-size: 14px; font-weight: 500; color: #888; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; }
 .tab.active { color: #6c8cff; border-bottom-color: #6c8cff; }
 .badge { background: #6c8cff; color: #fff; font-size: 11px; padding: 1px 7px; border-radius: 10px; margin-left: 4px; }
@@ -102,7 +102,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #
 /* Edit modal */
 .modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 100; justify-content: center; align-items: flex-end; }
 .modal.show { display: flex; }
-.modal-content { background: #1a1a1a; border-radius: 16px 16px 0 0; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; padding: 20px; }
+.modal-content { background: #1a1a1a; border-radius: 16px 16px 0 0; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
 .modal-content h3 { font-size: 17px; margin-bottom: 16px; }
 .modal-content label { display: block; font-size: 12px; color: #888; margin-bottom: 4px; margin-top: 12px; }
 .modal-content label.required::after { content: ' *'; color: #f87171; }
@@ -115,7 +115,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #
 .modal-actions .btn.cancel { background: #333; color: #ccc; }
 
 /* Toast */
-.toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #333; color: #e0e0e0; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+.toast { position: fixed; bottom: calc(100px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: #333; color: #e0e0e0; padding: 10px 20px; border-radius: 20px; font-size: 13px; z-index: 200; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
 .toast.show { opacity: 1; }
 
 /* Empty state buttons */
@@ -151,7 +151,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #
 /* Song picker modal */
 .picker-modal { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 150; flex-direction: column; }
 .picker-modal.show { display: flex; }
-.picker-header { display: flex; align-items: center; padding: 12px 16px; background: #1a1a1a; border-bottom: 1px solid #2a2a2a; gap: 8px; }
+.picker-header { display: flex; align-items: center; padding: 12px 16px; padding-top: calc(12px + env(safe-area-inset-top)); background: #1a1a1a; border-bottom: 1px solid #2a2a2a; gap: 8px; }
 .picker-header h3 { font-size: 15px; font-weight: 600; flex: 1; }
 .picker-header .close-picker { background: none; border: none; color: #888; font-size: 18px; padding: 4px 8px; cursor: pointer; }
 .picker-search { padding: 8px 12px; background: #1a1a1a; }
@@ -188,7 +188,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #
 /* Performer popup */
 .popup-backdrop { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 165; }
 .popup-backdrop.show { display: block; }
-.performer-popup { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #1c1c1c; border-radius: 16px 16px 0 0; z-index: 170; padding: 20px; }
+.performer-popup { display: none; position: fixed; bottom: 0; left: 0; right: 0; background: #1c1c1c; border-radius: 16px 16px 0 0; z-index: 170; padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
 .performer-popup.show { display: block; }
 .performer-popup h4 { font-size: 13px; color: #888; margin-bottom: 12px; }
 .performer-popup .pf-option { display: block; width: 100%; padding: 12px 14px; margin-bottom: 4px; background: #252525; border: 1px solid #333; border-radius: 8px; color: #e0e0e0; font-size: 15px; cursor: pointer; text-align: left; }
